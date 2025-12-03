@@ -1,0 +1,41 @@
+# https://github.com/bezkoder/docker-compose-spring-boot-mysql/blob/master/docker-compose.yml
+services:
+  mysql:
+    container_name: mysql_container
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE=$MYSQL_DATABASE
+    ports:
+      - $MYSQL_LOCAL_PORT:$MYSQL_DOCKER_PORT
+    networks:
+      - mysql
+    volumes:
+      - db:/var/lib/mysql
+  phpmyadmin:
+    container_name: phpmyadmin_container
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    volumes:
+      - ./php-make/upload.ini:/usr/local/etc/php/php.ini
+    depends_on:
+      - mysql
+    links:
+      - mysql
+    ports:
+      - "${PHPMYADMIN_PORT:-6060}:80"
+    networks:
+      - mysql
+    restart: always
+
+networks:
+  mysql:
+    driver: bridge
+
+volumes:
+  db:
