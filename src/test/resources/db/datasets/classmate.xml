@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataset>
+    <classmates
+            id="067ac38f-8b35-42b9-9f83-15a6dd3fadf0"
+            name="User Test"
+            age="1"
+    />
+    <classmates
+            id="9e8ab20a-2fa8-4437-a319-c68f00926eb8"
+            name="User Test 2"
+            age="2"
+    />
+</dataset>

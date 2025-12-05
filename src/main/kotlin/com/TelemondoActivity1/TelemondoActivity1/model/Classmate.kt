@@ -17,9 +17,9 @@ open class Classmate{
     @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(Types.VARCHAR)
     @Column(columnDefinition = "CHAR(36)", nullable = false, unique = true)
-    var id: UUID? = null
+    open var id: UUID? = null
 
-    lateinit var name: String
-    var age: Int? = null
+    open lateinit var name: String
+    open var age: Int? = null
 }
 
