@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import java.util.UUID
+import org.quartz.Scheduler
+import org.springframework.web.bind.annotation.RequestParam
 
 @RestController
 @RequestMapping("/api")
 class ClassmateController(
     private val service: ClassmateService,
-    private val mapper: ClassmateMapper
+    private val mapper: ClassmateMapper,
+    private val scheduler: Scheduler
 ){
     data class ClassmateResponseDTO(
         val id: UUID,
@@ -73,4 +76,55 @@ class ClassmateController(
         service.delete(id)
         return ResponseEntity.noContent().build()
     }
+
+    @GetMapping("/classmates/schedule-notification")
+    fun addRecurring(@RequestParam intervalInMinutes: Int) : ResponseEntity<String> = runCatching  {
+        val result = service.addRecurring(intervalInMinutes)
+        ResponseEntity.ok(result.toString())
+    }.getOrElse{
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+    }
+
+    data class ClassmateCreateScheduleDto(
+        val name: String,
+        val age: Int?,
+        val delayInMinutes: Int
+    )
+
+    @PostMapping("/classmates/schedule-create")
+    fun scheduleCreate(@RequestBody dto: ClassmateCreateScheduleDto): ResponseEntity<String> = runCatching {
+        val result = service.scheduleCreate(dto)
+        ResponseEntity.status(HttpStatus.ACCEPTED).body(result)
+    }.getOrElse {
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+    }
+
+    data class ClassmateUpdateScheduleDto(
+        val id: UUID,
+        val name: String,
+        val age: Int?,
+        val delayInMinutes: Int
+    )
+
+    @PutMapping("/classmates/schedule-update")
+    fun scheduleUpdate(@RequestBody dto: ClassmateUpdateScheduleDto): ResponseEntity<String> = runCatching {
+        val result = service.scheduleUpdate(dto)
+        ResponseEntity.status(HttpStatus.ACCEPTED).body(result)
+    }.getOrElse {
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+    }
+
+    data class ClassmateDeleteScheduleDto(
+        val id: UUID,
+        val delayInMinutes: Int
+    )
+
+    @DeleteMapping("/classmates/schedule-delete")
+    fun scheduleDelete(@RequestBody dto: ClassmateDeleteScheduleDto): ResponseEntity<String> = runCatching {
+        val result = service.scheduleDelete(dto)
+        ResponseEntity.status(HttpStatus.ACCEPTED).body(result.toString())
+    }.getOrElse {
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+    }
+
 }
