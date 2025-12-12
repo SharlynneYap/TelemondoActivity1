@@ -44,6 +44,7 @@ class ClassmateService (
             repo.save(existing)
         }.getOrThrow()
 
+    @Transactional
     fun delete(id: UUID){
         repo.deleteById(id)
     }

@@ -15,14 +15,13 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import java.util.UUID
 import org.quartz.Scheduler
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.RequestParam
 
 @RestController
 @RequestMapping("/api")
 class ClassmateController(
     private val service: ClassmateService,
-    private val mapper: ClassmateMapper,
-    private val scheduler: Scheduler
 ){
     data class ClassmateResponseDTO(
         val id: UUID,
@@ -44,6 +43,7 @@ class ClassmateController(
         val age: Int?
     )
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/classmates")
     fun addClassmate(@RequestBody classmateCreateDTO: ClassmateCreateDTO)
             : ResponseEntity<Classmate> =
@@ -59,6 +59,7 @@ class ClassmateController(
         val age: Int?
     )
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/classmates/{id}")
     fun updateClassmate(
         @PathVariable id: UUID,
@@ -71,13 +72,15 @@ class ClassmateController(
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/classmates/{id}")
     fun deleteClassmate(@PathVariable id: UUID): ResponseEntity<Void> {
         service.delete(id)
         return ResponseEntity.noContent().build()
     }
 
-    @GetMapping("/classmates/schedule-notification")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/classmates/schedule-notification")
     fun addRecurring(@RequestParam intervalInMinutes: Int) : ResponseEntity<String> = runCatching  {
         val result = service.addRecurring(intervalInMinutes)
         ResponseEntity.ok(result.toString())
@@ -91,6 +94,7 @@ class ClassmateController(
         val delayInMinutes: Int
     )
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/classmates/schedule-create")
     fun scheduleCreate(@RequestBody dto: ClassmateCreateScheduleDto): ResponseEntity<String> = runCatching {
         val result = service.scheduleCreate(dto)
@@ -106,6 +110,7 @@ class ClassmateController(
         val delayInMinutes: Int
     )
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/classmates/schedule-update")
     fun scheduleUpdate(@RequestBody dto: ClassmateUpdateScheduleDto): ResponseEntity<String> = runCatching {
         val result = service.scheduleUpdate(dto)
@@ -119,6 +124,7 @@ class ClassmateController(
         val delayInMinutes: Int
     )
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/classmates/schedule-delete")
     fun scheduleDelete(@RequestBody dto: ClassmateDeleteScheduleDto): ResponseEntity<String> = runCatching {
         val result = service.scheduleDelete(dto)
