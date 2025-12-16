@@ -15,6 +15,13 @@ class JwtService(
 
     private fun algorithm(): Algorithm = Algorithm.HMAC256(jwtSecret)
 
+    fun validateAndDecode(token: String): DecodedJWT? =
+        try {
+            JWT.require(algorithm()).build().verify(token)
+        } catch (ex: Exception) {
+            null
+        }
+
     //usage:
     //to generate token upon login
     //val token = jwtService.generateToken(userDetails.username, roles)

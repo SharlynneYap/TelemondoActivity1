@@ -1,9 +1,12 @@
 package com.TelemondoActivity1.TelemondoActivity1.security.jwt
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.interfaces.DecodedJWT
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -27,10 +30,10 @@ class JwtAuthFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        //for debugging
-        println("REQ ${request.method} ${request.requestURI}")
-        println("Cookie header: ${request.getHeader("Cookie")}")
-        println("Cookies parsed: ${request.cookies?.map { it.name } }")
+//        //for debugging
+//        println("REQ ${request.method} ${request.requestURI}")
+//        println("Cookie header: ${request.getHeader("Cookie")}")
+//        println("Cookies parsed: ${request.cookies?.map { it.name } }")
 
         // stops if authentication is already set for this request
         if (SecurityContextHolder.getContext().authentication != null) {
@@ -46,25 +49,29 @@ class JwtAuthFilter(
             return
         }
 
-        //validate user and gets username
-        val username = jwtService.validateAndGetUsername(token)
-        println("Username $username")
-        if (username != null) {
-            val userDetails = userDetailsService.loadUserByUsername(username)
+        //
+        val decoded = jwtService.validateAndDecode(token)
+        if (decoded != null) {
+            val username = decoded.subject
 
-            //Create an authentication object for Spring Security
+            // roles claim must contain values like: ROLE_USER, ROLE_ADMIN
+            val roles = decoded.getClaim("roles")
+                ?.asList(String::class.java)
+                ?: emptyList()
+
+            val authorities = roles.map { SimpleGrantedAuthority(it) }
+
             val auth = UsernamePasswordAuthenticationToken(
-                userDetails,
+                username,
                 null,
-                userDetails.authorities
+                authorities
             ).apply {
                 details = WebAuthenticationDetailsSource().buildDetails(request)
             }
 
-            // Store authentication in SecurityContext
             SecurityContextHolder.getContext().authentication = auth
         }
-        println("SecurityContext auth now: ${SecurityContextHolder.getContext().authentication}")
+//        println("SecurityContext auth now: ${SecurityContextHolder.getContext().authentication}")
         filterChain.doFilter(request, response)
     }
 }

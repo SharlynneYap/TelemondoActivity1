@@ -7,6 +7,8 @@ import com.github.database.rider.spring.api.DBRider
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.context.ImportTestcontainers
 import org.springframework.context.annotation.Import
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 
 @Import(TestContainersConfiguration::class)
 @ImportTestcontainers
@@ -24,4 +26,18 @@ import org.springframework.context.annotation.Import
     ]
 )
 @SpringBootTest
-abstract class TestContainersBaseTest
+abstract class TestContainersBaseTest{
+
+    companion object {
+        @JvmStatic
+        @DynamicPropertySource
+        fun registerProps(registry: DynamicPropertyRegistry) {
+            val nats = TestContainersConfiguration.natsContainer
+            if (!nats.isRunning) nats.start()
+
+            registry.add("nats.url") {
+                "nats://${nats.host}:${nats.getMappedPort(4222)}"
+            }
+        }
+    }
+}

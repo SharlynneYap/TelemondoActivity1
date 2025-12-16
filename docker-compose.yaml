@@ -32,7 +32,15 @@ services:
     networks:
       - mysql
     restart: always
-
+  nats:
+    container_name: nats_container
+    image: nats:2.12.0
+    restart: unless-stopped
+    ports:
+      - "${NATS_LOCAL_PORT}:${NATS_DOCKER_PORT}"
+      - "${NATS_MONITOR_LOCAL_PORT}:${NATS_MONITOR_DOCKER_PORT}"
+    networks:
+      - mysql
 networks:
   mysql:
     driver: bridge

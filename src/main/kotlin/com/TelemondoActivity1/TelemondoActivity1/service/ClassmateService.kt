@@ -2,6 +2,9 @@ package com.TelemondoActivity1.TelemondoActivity1.service
 
 import com.TelemondoActivity1.TelemondoActivity1.controller.ClassmateController
 import com.TelemondoActivity1.TelemondoActivity1.mapper.ClassmateMapper
+import com.TelemondoActivity1.TelemondoActivity1.messaging.NatsPublisher
+import com.TelemondoActivity1.TelemondoActivity1.messaging.events.ClassmateEventDataDto
+import com.TelemondoActivity1.TelemondoActivity1.messaging.events.ClassmateEventDto
 import com.TelemondoActivity1.TelemondoActivity1.model.Classmate
 import com.TelemondoActivity1.TelemondoActivity1.repo.ClassmateRepo
 import com.TelemondoActivity1.TelemondoActivity1.scheduler.ClassmateCreateJob
@@ -24,8 +27,13 @@ import java.util.Date
 class ClassmateService (
     private val repo: ClassmateRepo,
     private val mapper: ClassmateMapper,
-    private val scheduler: Scheduler
+    private val scheduler: Scheduler,
+    private val publisher: NatsPublisher
 ){
+    companion object {
+        private const val ENTITY_NAME = "classmate"
+    }
+
     fun getAll(): List<Classmate> = runCatching {
             repo.findAll()
         }.getOrThrow()
@@ -33,21 +41,58 @@ class ClassmateService (
     @Transactional
     fun add(dto: ClassmateController.ClassmateCreateDTO): Classmate = runCatching {
         val entity = mapper.toEntity(dto)
-        repo.save(entity)
+        val saved = repo.save(entity)
+        val event = ClassmateEventDto(
+            event = "created",
+            timestamp = Instant.now(),
+            entity = ENTITY_NAME,
+            data = ClassmateEventDataDto(
+                id = saved.id,
+                name = saved.name,
+                age = saved.age
+            )
+        )
+        publisher.publish("classmate.created", event)
+        saved
     }.getOrThrow()
 
     @Transactional
     fun update(id: UUID, dto: ClassmateController.ClassmateUpdateDTO): Classmate = runCatching {
             val existing = repo.findById(id).orElseThrow { IllegalArgumentException("Classmate not found") }
-
             mapper.updateEntityFromDto(dto, existing)
-            repo.save(existing)
+            val updated = repo.save(existing)
+
+            val event = ClassmateEventDto(
+                event = "updated",
+                timestamp = Instant.now(),
+                entity = ENTITY_NAME,
+                data = ClassmateEventDataDto(
+                    id = updated.id,
+                    name = updated.name,
+                    age = updated.age
+                )
+            )
+            publisher.publish("classmate.updated", event)
+            updated
+
         }.getOrThrow()
 
     @Transactional
-    fun delete(id: UUID){
-        repo.deleteById(id)
-    }
+    fun delete(id: UUID) = runCatching{
+        val existing = repo.findById(id).orElseThrow { IllegalArgumentException("Classmate not found") }
+        repo.delete(existing)
+        val event = ClassmateEventDto(
+            event = "deleted",
+            timestamp = Instant.now(),
+            entity = ENTITY_NAME,
+            data = ClassmateEventDataDto(
+                id = existing.id,
+                name = existing.name,
+                age = existing.age
+            )
+        )
+        publisher.publish("classmate.deleted", event)
+    }.getOrThrow()
 
     @Transactional
     fun addRecurring(intervalInMinutes: Int): Date = runCatching {
